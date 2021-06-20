@@ -25,22 +25,22 @@ https://www.mono-project.com/download/stable/#download-lin
     }
 ```
 ### Compile & Run
-csc hello.cs
-mono hello.exe
+* csc hello.cs
+* mono hello.exe
 
 ### Winforms Helloworld
-using System;
-using System.Windows.Forms;
+    using System;
+    using System.Windows.Forms;
 
-public class HelloWorld : Form
-{
-    static public void Main ()
+    public class HelloWorld : Form
     {
-        Application.Run (new HelloWorld ());
-    }
+        static public void Main ()
+        {
+            Application.Run (new HelloWorld ());
+        }
 
-    public HelloWorld ()
-    {
-        Text = "Hello Mono World";
+        public HelloWorld ()
+        {
+            Text = "Hello Mono World";
+        }
     }
-}
