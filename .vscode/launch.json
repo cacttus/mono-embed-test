@@ -17,7 +17,7 @@
       "debugServerArgs": "",
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
-      "externalConsole": true,
+      "externalConsole": false,
       "MIMode": "gdb",
       //"miDebuggerPath": "/usr/bin/gdb",
       //"miDebuggerArgs": "",

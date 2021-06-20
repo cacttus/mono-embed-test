@@ -44,3 +44,7 @@ https://www.mono-project.com/download/stable/#download-lin
             Text = "Hello Mono World";
         }
     }
+
+csc hello.cs -t:exe -out:./bin/hello.exe
+
+

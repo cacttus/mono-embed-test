@@ -129,8 +129,6 @@ set(VG_GCC_LINK_GLOBAL -pthread)
   set(VG_ADDL_LIBS ncurses)
 endif() 
 
-# `pkg-config --cflags --libs mono-2`
-
 
 target_link_directories(${PROJECT_NAME} PRIVATE ${VG_LIB_DIR})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${VULKAN_LIBRARIES} ${OPENGL_LIBRARIES} 
