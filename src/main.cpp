@@ -332,7 +332,8 @@ int main(int argc, char** argv) {
     //Test #1 -
     // {
     //   // This is the first basic test of executing an assembly as a standalone program.
-    //   //  Note Ubuntu, This test does not appear to work outside the dev environment filename != NULL .. ?.
+    //   //  * Note Ubuntu, This test does not appear to work outside the dev environment filename != NULL .. ?.
+    //   //  * Moving this test to the temporary appdomain causes further issues. mono_jit_exec should be avoided until we figure this out.
     //   std::cout << "Test #1 - Run an .exe print output to console in root domain" << std::endl;
     //   MonoAssembly* assembly = mono_domain_assembly_open(mono_domain_get(), "./hello.exe");
     //   if (!assembly) {
@@ -459,7 +460,7 @@ int main(int argc, char** argv) {
       std::cout << "Test #7 - Unload the temporary app domain to free memory." << std::endl;
       MonoDomain* toUnload = mono_domain_get();
       if (toUnload != mono_get_root_domain()) {
-        if (!mono_domain_set(mono_get_root_domain(), 0)) {
+        if (!mono_domain_set(mono_get_root_domain(), true)) {
           errorExit("Failed to set the domain");
         }
         std::cout << " Unloading new Appdomain, current heap used size: " << mono_gc_get_used_size() << std::endl;
