@@ -116,13 +116,18 @@ if(WIN32)
   set(VG_ADDL_LIBS "ws2_32.lib" "winmm.lib" "imm32.lib" "version.lib" "dbghelp.lib" "setupapi.lib" "iphlpapi.lib")
 elseif(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
 
-# --rdynamic is required to keep the unused c++ symbols from being optimized out so the mono runtime can find and use them. 
-set(VG_GCC_LINK_GLOBAL -pthread -rdynamic ) 
-# "`pkg-config --cflags --libs mono-2`"
+  # --rdynamic is required to keep the unused c++ symbols from being optimized out so the mono runtime can find and use them. 
+  set(VG_GCC_LINK_GLOBAL -pthread -rdynamic ) 
+  # "`pkg-config --cflags --libs mono-2`"
+  #  expands to .. 
+  # -D_REENTRANT -I/usr/lib/pkgconfig/../../include/mono-2.0 -L/usr/lib/pkgconfig/../../lib -lmono-2.0 -lm -lrt -ldl -lpthread
+ 
+  set(VG_MONO_COMP_FLAGS -D_REENTRANT -lm -lrt -ldl )
 
-#pkg-config --cflags --libs mono-2
-  target_compile_options(${VG_TARGET_NAME} PRIVATE "$<$<CONFIG:DEBUG>:" -D_DEBUG -D_GLIBCXX_DEBUG ">")
-  target_compile_options(${VG_TARGET_NAME} PRIVATE "$<$<CONFIG:RELEASE>:" -Ofast ">")
+  message("Mono Flags: " ${VG_MONO_FLAGS})
+
+  target_compile_options(${VG_TARGET_NAME} PRIVATE "$<$<CONFIG:DEBUG>:" -D_DEBUG -D_GLIBCXX_DEBUG ${VG_MONO_COMP_FLAGS} ">")
+  target_compile_options(${VG_TARGET_NAME} PRIVATE "$<$<CONFIG:RELEASE>:" -Ofast ${VG_MONO_COMP_FLAGS} ">") 
 
   target_link_options(${VG_TARGET_NAME} PRIVATE "$<$<CONFIG:RELEASE>:" ${VG_GCC_LINK_GLOBAL} ">")
   target_link_options(${VG_TARGET_NAME} PRIVATE "$<$<CONFIG:DEBUG>:" ${VG_GCC_LINK_GLOBAL} ">")

@@ -1,3 +1,13 @@
+// mono-embed-test
+//
+// Test C++/C# interactivity using Mono as a hypothetical game engine scripting language.
+// Also test performance overhead of mono vs c++.
+//
+// Bugs:
+//   mono_jit_exec produces an error running the application outside of the dev environment - Ubuntu.
+//
+// Not tested in Windows/Mac.
+//
 #include <iostream>
 #include <string>
 #include <vector>
@@ -252,6 +262,11 @@ MonoObject* boxVec3(vec3& vec3_cpp) {
   mono_field_set_value(obj, v3class_field_z_cached, (void*)&vec3_cpp.z);
   return obj;
 }
+void vec3CrossProductNoMonoOverhead(vec3& a, vec3& b, vec3& c){
+  for (int i = 0; i < 1000; ++i) {
+    c = a.cross(b);
+  }
+}
 MonoObject* vec3CrossProduct(MonoObject* a_cs, MonoObject* b_cs) {
   //Simulate some complex engine work.
   checkVec3MonoClassLoaded();
@@ -260,13 +275,12 @@ MonoObject* vec3CrossProduct(MonoObject* a_cs, MonoObject* b_cs) {
   unboxVec3(a_cs, a);
   unboxVec3(a_cs, b);
   vec3 c;
-  for (int i = 0; i < 1000; ++i) {
-    c = a.cross(b);
-  }
+  vec3CrossProductNoMonoOverhead(a,b,c);
   MonoObject* obj = boxVec3(c);
 
   return obj;
 }
+
 MonoObject* cppUnboxTest(MonoObject* vec3_cs) {
   checkVec3MonoClassLoaded();
 
@@ -428,10 +442,12 @@ int main(int argc, char** argv) {
 
           //b. Run OnUpdate in our test game loop.
           std::cout << " Running OnUpdate for 13 milliseconds.." << std::endl;
-          auto tA = Gu::getMilliSeconds();
+          uint64_t tA, tB;
+
+          tA = Gu::getMilliSeconds();
           int did_run = 0;
           while (true) {
-            auto tB = Gu::getMilliSeconds() - tA;
+            tB = Gu::getMilliSeconds() - tA;
             if (tB > 13) {
               break;
             }
@@ -441,7 +457,22 @@ int main(int argc, char** argv) {
             }
             did_run++;
           }
-          std::cout << " Ran OnUpdate " << did_run << " times." << std::endl;
+          std::cout << " Ran OnUpdate " << did_run << " times (C#->C++->C#)." << std::endl;
+          
+          std::cout << " (performance) Running same method without mono overhead " << std::endl;
+          int did_run2=0;
+          tA = Gu::getMilliSeconds();
+          while (true) {
+            tB = Gu::getMilliSeconds() - tA;
+            if (tB > 13) {
+              break;
+            }
+            vec3 a(1,0,0), b(0,1,0), c(0,0,0);
+            vec3CrossProductNoMonoOverhead(a,b,c);
+            did_run2++;
+          }
+          std::cout << " Ran vec3CrossProductNoMonoOverhead " << did_run2 << " times (C++ only)." << std::endl;
+          std::cout << " Performance increase in c++ only version: %" << 100 - ((float)did_run / (float)did_run2 * 100) << std::endl;
 
           mono_free_method(onupdate_method);
 
