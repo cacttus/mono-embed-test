@@ -1,7 +1,8 @@
 // mono-embed-test
 //
 // Test C++/C# interactivity using Mono as a hypothetical game engine scripting language.
-// Also test performance overhead of mono vs c++.
+// Test performance overhead of mono vs c++.
+// Test memory usage and unloading assemblies by creating/unloading app domains.
 //
 // Bugs:
 //   mono_jit_exec produces an error running the application outside of the dev environment - Ubuntu.
