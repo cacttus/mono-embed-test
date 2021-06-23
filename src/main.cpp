@@ -261,7 +261,7 @@ MonoObject* vec3CrossProduct(MonoObject* a_cs, MonoObject* b_cs) {
   unboxVec3(a_cs, b);
   vec3 c;
   for (int i = 0; i < 1000; ++i) {
-     c = a.cross(b);
+    c = a.cross(b);
   }
   MonoObject* obj = boxVec3(c);
 
@@ -278,28 +278,17 @@ MonoObject* cppUnboxTest(MonoObject* vec3_cs) {
   MonoObject* obj = boxVec3(a);
   return obj;
 }
-///////////////////////
-int main(int argc, char** argv) {
-  std::string code = std::string("\n") +
-                     "using System;\n" +
-                     "\n" +
-                     "public class HelloWorld\n" +
-                     "{\n" +
-                     "    public static void Main(string[] args)\n" +
-                     "    {\n" +
-                     "        Console.WriteLine (\" Hello Mono World \");\n" +
-                     "    }\n" +
-                     "}\n";
-
-  //Le'ts try to do this with popen.
-  //# `pkg-config --cflags --libs mono-2`
-  //
-
-  //data/scripts/hello.cs
-
+void printcwd() {
   char* d = getcwd(NULL, 0);
   std::cout << "CWD:" << d << std::endl;
+}
+///////////////////////
+int main(int argc, char** argv) {
+  // Apparently you need pkg-config in the mono docs. I didn't use pkg-config in cmake but this should be noted.
+  //# `pkg-config --cflags --libs mono-2`
+  printcwd();
 
+//Compile files.
 #ifdef unix
   string_t out;
   std::cout << "Compiling hello" << std::endl;
@@ -316,78 +305,78 @@ int main(int argc, char** argv) {
     std::cout << " << compile error. See output. Press Enter to Continue." << std::endl;
     Gu::debugBreak();
   }
-  //library / module?
 #else
-#pragma error("Unsupported operating system.")
+#pragma error("Unsupported operating system. Try to uncomment this #ifdef to see if it works in Windows.")
 #endif
-  //system("csc hello.cs -t:exe -out:./bin/hello.exe");
-  //Gu::debugBreak();
 
-  //So apparently this needs to be called for mono to locate assemblies.
-  //  mono_set_dirs("/usr/lib","/etc"); <<- This is if you need to relocate mono to a custom directory ex. in Windows
+  // Note:
+  // This is if you need to relocate mono to a custom directory ex. in Windows or with a build.
+  //  mono_set_dirs("/usr/lib","/etc");
 
-  //Mono does not like when you call jit_init more than once. Just once when you start your app.
   std::cout << "Parsing config" << std::endl;
   mono_config_parse(NULL);
-  //The API says specifically to use mono_jit_init and not anything else.
+
+  //The API says specifically to use mono_jit_init and not anything else to initialize mono.
+  //Mono does not like when you call jit_init more than once. Just once when you start your app.
   std::cout << "Executing jit_init" << std::endl;
   MonoDomain* main_domain = mono_jit_init("Dummy");
-  //MonoDomain* dummy_domain = mono_init("Dummy");
+  std::cout << "  current heap used size: " << mono_gc_get_used_size() << std::endl;
   {
-    /*
-    Note:
-      You cannot unload assemblies in C#.
-      To Prevent memory loss you can dynamically load your assembly in another AppDomain. 
-      Then when you don't need your assembly - you have to unload you AppDomain with loaded assembly.
-      This does not appear to work on Ubuntu.
-    */
-    ///////////////////////////////////////////////////////////////////////////////////////////////
-    //Test #1 - Run an .exe print output to console
-    {
-      //This test does not appear to work outside the dev environment filename != NULL .. ?.
-      std::cout << "Test1" << std::endl;
+    // Note:
+    // You cannot unload assemblies in C#.
+    // To Prevent memory loss you can dynamically load your assembly in another AppDomain then release that domain.
+    // This does not appear to work on Ubuntu without hitting some bugs in the mono runtime.
+    printcwd();
 
-      std::cout << "Getting hello.exe assembly" << std::endl;
-      MonoAssembly* assembly = mono_domain_assembly_open(mono_domain_get(), "./hello.exe");
-      if (!assembly) {
-        errorExit("Assembly not found.");
-      }
-      else {
-        std::cout << "Assembly found " << mono_assembly_name_get_name(mono_assembly_get_name(assembly)) << std::endl;
-      }
-      std::cout << "Executing hello.exe assembly" << std::endl;
-      int retval = mono_jit_exec(mono_domain_get(), assembly, argc - 1, argv + 1);
-    }
     ///////////////////////////////////////////////////////////////////////////////////////////////
-    //Test #2 - Run methods from a .dll
+    //Test #1 -
+    // {
+    //   // This is the first basic test of executing an assembly as a standalone program.
+    //   //  Note Ubuntu, This test does not appear to work outside the dev environment filename != NULL .. ?.
+    //   std::cout << "Test #1 - Run an .exe print output to console in root domain" << std::endl;
+    //   MonoAssembly* assembly = mono_domain_assembly_open(mono_domain_get(), "./hello.exe");
+    //   if (!assembly) {
+    //     errorExit(" Assembly not found.");
+    //   }
+    //   else {
+    //     std::cout << " a. Assembly found.. " << mono_assembly_name_get_name(mono_assembly_get_name(assembly)) << std::endl;
+    //   }
+    //   std::cout << " b. Executing hello.exe assembly.." << std::endl;
+    //   int retval = mono_jit_exec(mono_domain_get(), assembly, argc - 1, argv + 1);
+    //   std::cout << " c. Done. Assembly returned " << retval << std::endl;
+    // }
+    ///////////////////////////////////////////////////////////////////////////////////////////////
     {
-      std::cout << "Test2" << std::endl;
-      std::cout << "Creating new Appdomain" << std::endl;
-      //Create New Domain
+      std::cout << "Test #2 - Create new Appdomain" << std::endl;
+      std::cout << "  Creating new domain, current heap used size: " << mono_gc_get_used_size() << std::endl;
       MonoDomain* temp_domain = mono_domain_create_appdomain((char*)"temp_domain", NULL);
       if (!mono_domain_set(temp_domain, 0)) {
-        errorExit("Failed to set the domain");
+        errorExit("  Failed to set the domain");
       }
+      ////////////////////////////////////////////////////////////////////////////////////////
+      const char* mygame_asm = "./MyGame.dll";
+      MonoAssembly* assembly = mono_domain_assembly_open(mono_domain_get(), mygame_asm);
+      if (!assembly) {
+        errorExit(" Assembly not found.");
+      }
+      ////////////////////////////////////////////////////////////////////////////////////////
       {
-        const char* mygame_asm = "./MyGame.dll";
-        //So to load an image the assembly also needs to be loaded.
-        MonoAssembly* assembly = mono_domain_assembly_open(mono_domain_get(), mygame_asm);
-        if (!assembly) {
-          errorExit("Assembly not found.");
-        }
         {
+          std::cout << "Test #3 - Throw exception in C# and catch in C++" << std::endl;
+
           //Assemblies contain images. I'm not sure why you pass the filename if the assembly needs to be loaded anyway..?
           MonoMethod* method = find_static_method(mygame_asm, "MyGame", "MyClass", "MyGame.MyClass:OnStart()");
           MonoObject* exception = nullptr;
           MonoObject* result = mono_runtime_invoke(method, NULL, NULL, &exception);
           if (exception != nullptr) {
-            errorExit(Stz "MyGame dll -> exception thrown: ??");  //How to get exception information from a MonoObject ?
+            errorExit(Stz " MyGame dll -> exception thrown: ??");  //How to get exception information from a MonoObject ?
           }
           mono_free_method(method);
+          mono_gc_collect(mono_gc_max_generation());
         }
         ///////////////////////////////////////////////////////////////////////////////////////////////
-        //Test #3 - Call a C++ method from C#
         {
+          std::cout << "Test #4 - Call C++ method from C#" << std::endl;
           //Assemblies contain images. I'm not sure why you pass the filename if the assembly needs to be loaded anyway..?
           MonoMethod* method = find_static_method(mygame_asm, "MyGame", "MyClass", "MyGame.MyClass:ExceptionTest()");
           MonoObject* exception = nullptr;
@@ -397,29 +386,31 @@ int main(int argc, char** argv) {
             MonoException* e = mono_get_exception_runtime_wrapped(exception);
             //How to get the exception message?
             //MonoError
-            std::cout << "Test Passed - exception thrown and caught in C++" << std::endl;
+            std::cout << " Test Passed - exception thrown and caught in C++" << std::endl;
           }
           mono_free_method(method);
+          mono_gc_collect(mono_gc_max_generation());
         }
         ///////////////////////////////////////////////////////////////////////////////////////////////
-        //Test #4 - Call a C++ method from C# and return a C# class with the data.
         {
+          std::cout << "Test #5 - Call a C++ method from C# and return a C# class with the data." << std::endl;
           mono_add_internal_call("MyGame.MyClass::CppUnboxTest", reinterpret_cast<void*>(cppUnboxTest));
           MonoMethod* CSUnboxTest_method = find_static_method(mygame_asm, "MyGame", "MyClass", "MyGame.MyClass:CSUnboxTest()");
           MonoObject* exception = nullptr;
           MonoObject* result = nullptr;
 
           //a. Test OnUpdate once.
-          std::cout << "Running test to send mono class to c++." << std::endl;
+          std::cout << " Running test to send mono class to c++." << std::endl;
           result = mono_runtime_invoke(CSUnboxTest_method, NULL, NULL, NULL);
           if (exception != nullptr) {
-            errorExit(Stz "MyGame dll -> exception thrown: ??");  //How to get exception information from a MonoObject ?
+            errorExit(Stz " MyGame dll -> exception thrown: ??");  //How to get exception information from a MonoObject ?
           }
           mono_free_method(CSUnboxTest_method);
+          mono_gc_collect(mono_gc_max_generation());
         }
         ///////////////////////////////////////////////////////////////////////////////////////////////
-        //Test #5 - Call a C++ method from C# and return a C# class with the data.
         {
+          std::cout << "Test 6 - Call a C++ method from C# and return a C# class with the data." << std::endl;
           //Holy shit it worked. I was using Namespace.Class:Method the signature but it must be N.C::M.
           mono_add_internal_call("MyGame.MyClass::Vec3CrossProduct", reinterpret_cast<void*>(vec3CrossProduct));
 
@@ -428,14 +419,14 @@ int main(int argc, char** argv) {
           MonoObject* result = nullptr;
 
           //a. Test OnUpdate once.
-          std::cout << "Running OnUpdate once to verify it works." << std::endl;
+          std::cout << " Running OnUpdate once to verify it works." << std::endl;
           result = mono_runtime_invoke(onupdate_method, NULL, NULL, NULL);
           if (exception != nullptr) {
-            errorExit(Stz "MyGame dll -> exception thrown: ??");  //How to get exception information from a MonoObject ?
+            errorExit(Stz " MyGame dll -> exception thrown: ??");  //How to get exception information from a MonoObject ?
           }
 
           //b. Run OnUpdate in our test game loop.
-          std::cout << "Running OnUpdate for 13 milliseconds.." << std::endl;
+          std::cout << " Running OnUpdate for 13 milliseconds.." << std::endl;
           auto tA = Gu::getMilliSeconds();
           int did_run = 0;
           while (true) {
@@ -445,11 +436,11 @@ int main(int argc, char** argv) {
             }
             result = mono_runtime_invoke(onupdate_method, NULL, NULL, NULL);
             if (exception != nullptr) {
-              errorExit(Stz "MyGame dll -> exception thrown: ??");  //How to get exception information from a MonoObject ?
+              errorExit(Stz " MyGame dll -> exception thrown: ??");  //How to get exception information from a MonoObject ?
             }
             did_run++;
           }
-          std::cout << "Ran OnUpdate " << did_run << " times." << std::endl;
+          std::cout << " Ran OnUpdate " << did_run << " times." << std::endl;
 
           mono_free_method(onupdate_method);
 
@@ -458,28 +449,28 @@ int main(int argc, char** argv) {
           exception = nullptr;
           result = mono_runtime_invoke(onexit_method, NULL, NULL, &exception);
           if (exception != nullptr) {
-            errorExit(Stz "MyGame dll -> exception thrown: ??");  //How to get exception information from a MonoObject ?
+            errorExit(Stz " MyGame dll -> exception thrown: ??");  //How to get exception information from a MonoObject ?
           }
           mono_free_method(onexit_method);
+          mono_gc_collect(mono_gc_max_generation());
         }
       }
       ///////////////////////////////////////////////////////////////////////////////////////////////
-      //Test #6 - Unload the Domain - fails in ubuntu
+      std::cout << "Test #7 - Unload the temporary app domain to free memory." << std::endl;
       MonoDomain* toUnload = mono_domain_get();
       if (toUnload != mono_get_root_domain()) {
         if (!mono_domain_set(mono_get_root_domain(), 0)) {
           errorExit("Failed to set the domain");
         }
-        //*** This does not work on ubuntu ***
-        // I tried everything to get the domain to unload to no avail. Someone can create an issue for this in github.
-
-        //mono_gc_collect(mono_gc_max_generation());
-        //std::cout << "Unloading new Appdomain" << std::endl;
-        //mono_domain_unload(toUnload);
+        std::cout << " Unloading new Appdomain, current heap used size: " << mono_gc_get_used_size() << std::endl;
+        mono_domain_unload(toUnload);
+        std::cout << " Unloaded Appdomain, current heap used size: " << mono_gc_get_used_size() << std::endl;
       }
     }
   }
+  std::cout << "running >> mono_domain_set" << std::endl;
   mono_domain_set(main_domain, false);
+  std::cout << "running >> mono_jit_cleanup" << std::endl;
   mono_jit_cleanup(main_domain);
 
   /// End of Mono Test
