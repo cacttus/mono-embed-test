@@ -115,7 +115,10 @@ if(WIN32)
   find_package(SDL2_net REQUIRED)
   set(VG_ADDL_LIBS "ws2_32.lib" "winmm.lib" "imm32.lib" "version.lib" "dbghelp.lib" "setupapi.lib" "iphlpapi.lib")
 elseif(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-set(VG_GCC_LINK_GLOBAL -pthread) 
+
+# --rdynamic is required to keep the unused c++ symbols from being optimized out so the mono runtime can find and use them. 
+set(VG_GCC_LINK_GLOBAL -pthread -rdynamic ) 
+# "`pkg-config --cflags --libs mono-2`"
 
 #pkg-config --cflags --libs mono-2
   target_compile_options(${VG_TARGET_NAME} PRIVATE "$<$<CONFIG:DEBUG>:" -D_DEBUG -D_GLIBCXX_DEBUG ">")

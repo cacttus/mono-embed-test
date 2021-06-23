@@ -6,7 +6,7 @@
   },
   "debug.onTaskErrors": "showErrors",
   "editor.renderWhitespace": "all",
-  "workbench.colorTheme": "Default Light+", //Ctrl+K Ctrl+T -- Monokai, Quiet Light, Default Light+, Visual Studio Dark, Solarized Dark, Solarized Light, Tomorrow Night Blue
+  "workbench.colorTheme": "Visual Studio 2019 Light", //Ctrl+K Ctrl+T -- Monokai, Quiet Light, Default Light+, Visual Studio Dark, Solarized Dark, Solarized Light, Tomorrow Night Blue
   "editor.comments.ignoreEmptyLines": false,
   "editor.copyWithSyntaxHighlighting": false,
   "editor.definitionLinkOpensInPeek": true,
@@ -100,7 +100,8 @@
     "valarray": "cpp",
     "any": "cpp",
     "unordered_set": "cpp",
-    "forward_list": "cpp"
+    "forward_list": "cpp",
+    "hash_map": "cpp"
   },
   "cmake.configureOnOpen": false,
   "cmake.debugConfig": {
